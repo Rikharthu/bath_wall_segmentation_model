@@ -11,8 +11,8 @@ from torchvision import transforms as T
 
 class ADE20KDataset(torch.utils.data.Dataset):
 
-    def __init__(self, root, mode="train"):
-        assert mode in {"train", "val"}
+    def __init__(self, root, mode='all'):
+        assert mode in {"train", "val", 'all'}
 
         self.root = root
         self.mode: str = mode
@@ -21,7 +21,36 @@ class ADE20KDataset(torch.utils.data.Dataset):
         index_file = os.path.join(self.root, "index_ade20k.pkl")
         with open(index_file, "rb") as f:
             self.index: Dict[str, Any] = pickle.load(f)
-        # TODO: filter index based on mode: 'train' or 'val'
+
+        if not mode == 'all':
+            if mode == 'train':
+                predicate = lambda i: self._is_training_folder(self.index['folder'][i])
+            else:
+                predicate = lambda i: not self._is_training_folder(self.index['folder'][i])
+            indices_to_keep = list(filter(predicate, range(0, len(self.index['filename']))))
+            self._filter_keep_indices(indices_to_keep)
+
+    def _filter_keep_indices(self, indices_to_keep):
+        num_classes = len(self.index['objectPresence'])
+        num_keep = len(indices_to_keep)
+
+        # Update object presence
+        updated_object_presence = np.zeros((num_classes, num_keep), dtype=np.uint8)
+        for class_idx in range(0, num_classes):
+            for updated_image_idx in range(0, num_keep):
+                orig_image_idx = indices_to_keep[updated_image_idx]
+                updated_object_presence[class_idx, updated_image_idx] = self.index['objectPresence'][
+                    class_idx, orig_image_idx]
+        self.index['objectPresence'] = updated_object_presence
+
+        indices_to_keep = set(indices_to_keep)
+        self.index['filename'] = [x for i, x in enumerate(self.index['filename']) if i in indices_to_keep]
+        self.index['folder'] = [x for i, x in enumerate(self.index['folder']) if i in indices_to_keep]
+
+    @staticmethod
+    def _is_training_folder(folder: str) -> bool:
+        split = folder.split('/')[3]
+        return split == 'training'
 
     def __len__(self):
         return len(self.index['filename'])
@@ -55,19 +84,18 @@ class ADE20KDataset(torch.utils.data.Dataset):
 
 
 class WallADE20KDataset(ADE20KDataset):
+    ADE20K_WALL_CLASS_IDX = 2977
+    # 0 is reserved for background
+    ADE20K_WALL_CLASS_ID = ADE20K_WALL_CLASS_IDX + 1
 
     def __init__(self, root, mode="train"):
         super().__init__(root, mode)
-
-        self.orig_wall_class_idx = 2977
-        # 0 is reserved for background
-        self.orig_wall_class_id = self.orig_wall_class_idx + 1
 
         # Delete items at indices where images do not contain any walls
         indices_to_delete = []
         num_total_images = len(self.index['filename'])
         for i in range(0, num_total_images):
-            if self.index["objectPresence"][self.orig_wall_class_idx, i] == 0:
+            if self.index["objectPresence"][self.ADE20K_WALL_CLASS_IDX, i] == 0:
                 # There is no wall object present at this index
                 indices_to_delete.append(i)
         indices_to_delete = set(indices_to_delete)
@@ -78,8 +106,8 @@ class WallADE20KDataset(ADE20KDataset):
     def _convert_seg_image_to_mask(self, seg_image) -> np.array:
         # Remove all labels except 'wall' and set it to '1'
         mask = super()._convert_seg_image_to_mask(seg_image)
-        mask[mask != self.orig_wall_class_id] *= 0
-        mask[mask == self.orig_wall_class_id] = 1
+        mask[mask != self.ADE20K_WALL_CLASS_ID] *= 0
+        mask[mask == self.ADE20K_WALL_CLASS_ID] = 1
         return mask
 
 
