@@ -1,0 +1,12 @@
+numpy
+pandas
+matplotlib
+scikit-learn
+torch
+torchvision
+Pillow
+albumentations
+tqdm
+jupyter
+pytorch-lightning==1.5.4
+segmentation-models-pytorch
