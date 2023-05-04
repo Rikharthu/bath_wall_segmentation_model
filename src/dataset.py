@@ -5,8 +5,9 @@ from PIL import Image
 import pickle
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from torchvision import transforms as T
+from src.config import WALL_DATA
 
 
 class ADE20KDataset(torch.utils.data.Dataset):
@@ -31,12 +32,13 @@ class ADE20KDataset(torch.utils.data.Dataset):
             self._filter_keep_indices(indices_to_keep)
 
     def _filter_keep_indices(self, indices_to_keep):
-        num_classes = len(self.index['objectPresence'])
+        num_object_classes = len(self.index['objectPresence'])
         num_keep = len(indices_to_keep)
 
         # Update object presence
-        updated_object_presence = np.zeros((num_classes, num_keep), dtype=np.uint8)
-        for class_idx in range(0, num_classes):
+        # [C, N]
+        updated_object_presence = np.zeros((num_object_classes, num_keep), dtype=np.uint8)
+        for class_idx in range(0, num_object_classes):
             for updated_image_idx in range(0, num_keep):
                 orig_image_idx = indices_to_keep[updated_image_idx]
                 updated_object_presence[class_idx, updated_image_idx] = self.index['objectPresence'][
@@ -46,6 +48,7 @@ class ADE20KDataset(torch.utils.data.Dataset):
         indices_to_keep = set(indices_to_keep)
         self.index['filename'] = [x for i, x in enumerate(self.index['filename']) if i in indices_to_keep]
         self.index['folder'] = [x for i, x in enumerate(self.index['folder']) if i in indices_to_keep]
+        self.index['scene'] = [x for i, x in enumerate(self.index['scene']) if i in indices_to_keep]
 
     @staticmethod
     def _is_training_folder(folder: str) -> bool:
@@ -88,20 +91,38 @@ class WallADE20KDataset(ADE20KDataset):
     # 0 is reserved for background
     ADE20K_WALL_CLASS_ID = ADE20K_WALL_CLASS_IDX + 1
 
-    def __init__(self, root, mode="train"):
+    def __init__(self, root, mode='train'):
         super().__init__(root, mode)
 
         # Delete items at indices where images do not contain any walls
-        indices_to_delete = []
+        indices_to_keep = []
         num_total_images = len(self.index['filename'])
-        for i in range(0, num_total_images):
-            if self.index["objectPresence"][self.ADE20K_WALL_CLASS_IDX, i] == 0:
-                # There is no wall object present at this index
-                indices_to_delete.append(i)
-        indices_to_delete = set(indices_to_delete)
 
-        self.index['filename'] = [x for i, x in enumerate(self.index['filename']) if i not in indices_to_delete]
-        self.index['folder'] = [x for i, x in enumerate(self.index['folder']) if i not in indices_to_delete]
+        indices_to_keep = [i for i in range(0, num_total_images) if self._is_indoor_wall_sample(i)]
+
+        self._filter_keep_indices(indices_to_keep)
+
+    def _is_indoor_wall_sample(self, idx) -> bool:
+        # return self.index["objectPresence"][self.ADE20K_WALL_CLASS_IDX, idx] > 0
+
+        if self.index["objectPresence"][self.ADE20K_WALL_CLASS_IDX, idx] == 0:
+            # There is no wall object present at this index
+            return False
+
+        scene = self.index['scene'][idx]
+        if scene.startswith('/'):
+            scene_short = scene.split('/')[1]
+        else:
+            scene_short = scene.split('/')[0]
+        filename = self.index['filename'][idx]
+        if scene_short in WALL_DATA['scenes']:
+            return True
+        if scene in WALL_DATA['full_scenes']:
+            return True
+        if filename in WALL_DATA['filenames']:
+            return True
+
+        return False
 
     def _convert_seg_image_to_mask(self, seg_image) -> np.array:
         # Remove all labels except 'wall' and set it to '1'
@@ -114,8 +135,13 @@ class WallADE20KDataset(ADE20KDataset):
 class SimpleWallADE20KDataset(WallADE20KDataset):
     IMAGE_SIZE = (512, 512)
 
-    def __init__(self, root, mode="train"):
+    def __init__(self, root, mode='all', length: Optional[int] = None):
         super().__init__(root, mode)
+
+        if length:
+            length = min(self.__len__(), length)
+            indices_to_keep = list(range(0, length))
+            self._filter_keep_indices(indices_to_keep)
 
     def __getitem__(self, idx: int):
         image, mask = super().__getitem__(idx)
