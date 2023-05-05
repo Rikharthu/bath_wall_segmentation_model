@@ -103,26 +103,26 @@ class WallADE20KDataset(ADE20KDataset):
         self._filter_keep_indices(indices_to_keep)
 
     def _is_indoor_wall_sample(self, idx) -> bool:
-        # return self.index["objectPresence"][self.ADE20K_WALL_CLASS_IDX, idx] > 0
+        return self.index["objectPresence"][self.ADE20K_WALL_CLASS_IDX, idx] > 0
 
-        if self.index["objectPresence"][self.ADE20K_WALL_CLASS_IDX, idx] == 0:
-            # There is no wall object present at this index
-            return False
-
-        scene = self.index['scene'][idx]
-        if scene.startswith('/'):
-            scene_short = scene.split('/')[1]
-        else:
-            scene_short = scene.split('/')[0]
-        filename = self.index['filename'][idx]
-        if scene_short in WALL_DATA['scenes']:
-            return True
-        if scene in WALL_DATA['full_scenes']:
-            return True
-        if filename in WALL_DATA['filenames']:
-            return True
-
-        return False
+        # if self.index["objectPresence"][self.ADE20K_WALL_CLASS_IDX, idx] == 0:
+        #     # There is no wall object present at this index
+        #     return False
+        #
+        # scene = self.index['scene'][idx]
+        # if scene.startswith('/'):
+        #     scene_short = scene.split('/')[1]
+        # else:
+        #     scene_short = scene.split('/')[0]
+        # filename = self.index['filename'][idx]
+        # if scene_short in WALL_DATA['scenes']:
+        #     return True
+        # if scene in WALL_DATA['full_scenes']:
+        #     return True
+        # if filename in WALL_DATA['filenames']:
+        #     return True
+        #
+        # return False
 
     def _convert_seg_image_to_mask(self, seg_image) -> np.array:
         # Remove all labels except 'wall' and set it to '1'

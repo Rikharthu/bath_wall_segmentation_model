@@ -128,6 +128,10 @@ WALL_DATA = {
         '/museum/indoor',
         'museum/indoor',
         '/natural_history_museum',
+        'utliers/amphitheater_indoor',
+        'utliers/artists_loft/questionable',
+        'utliers/back_porch',
+        'utliers/backroom',
     },
     'filenames': {
         'ADE_train_00012308.jpg',
