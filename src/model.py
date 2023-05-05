@@ -28,7 +28,7 @@ class WallModel(pl.LightningModule):
 
         self.stage_outputs = {
             "train": [],
-            "valid": []
+            "val": []
         }
 
     def forward(self, image):
@@ -86,7 +86,7 @@ class WallModel(pl.LightningModule):
 
         return output
 
-    def _shared_epoch_ed(self, stage):
+    def _shared_epoch_end(self, stage):
         outputs = self.stage_outputs[stage]
 
         # Aggregate step metrics
@@ -116,22 +116,22 @@ class WallModel(pl.LightningModule):
         outputs.clear()
 
     def training_step(self, batch, batch_idx):
-        return self.shared_step(batch, "train")
+        return self._shared_step(batch, "train")
 
     def on_train_epoch_end(self):
-        return self.shared_epoch_end("train")
+        return self._shared_epoch_end("train")
 
     def validation_step(self, batch, batch_idx):
-        return self.shared_step(batch, "val")
+        return self._shared_step(batch, "val")
 
     def on_validation_epoch_end(self):
-        return self.shared_epoch_end("val")
+        return self._shared_epoch_end("val")
 
     def test_step(self, batch, batch_idx):
-        return self.shared_step(batch, "test")
+        return self._shared_step(batch, "test")
 
     def on_test_epoch_end(self):
-        return self.shared_epoch_end("test")
+        return self._shared_epoch_end("test")
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=1e-4)
