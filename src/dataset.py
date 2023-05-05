@@ -3,11 +3,9 @@ import torch
 from torch.utils.data import Dataset
 from PIL import Image
 import pickle
-import matplotlib.pyplot as plt
 import numpy as np
-from typing import Dict, Any, Optional
-from torchvision import transforms as T
-from src.config import WALL_DATA
+from typing import Dict, Any, Optional, Tuple
+from src import config
 
 
 class ADE20KDataset(torch.utils.data.Dataset):
@@ -87,15 +85,13 @@ class ADE20KDataset(torch.utils.data.Dataset):
 
 
 class WallADE20KDataset(ADE20KDataset):
-    ADE20K_WALL_CLASS_IDX = 2977
-    # 0 is reserved for background
-    ADE20K_WALL_CLASS_ID = ADE20K_WALL_CLASS_IDX + 1
 
-    def __init__(self, root, mode='train'):
+    def __init__(self, root, mode='train', filter_scenes=True):
         super().__init__(root, mode)
 
+        self.filter_scenes = filter_scenes
+
         # Delete items at indices where images do not contain any walls
-        indices_to_keep = []
         num_total_images = len(self.index['filename'])
 
         indices_to_keep = [i for i in range(0, num_total_images) if self._is_indoor_wall_sample(i)]
@@ -103,43 +99,41 @@ class WallADE20KDataset(ADE20KDataset):
         self._filter_keep_indices(indices_to_keep)
 
     def _is_indoor_wall_sample(self, idx) -> bool:
-        return self.index["objectPresence"][self.ADE20K_WALL_CLASS_IDX, idx] > 0
+        if self.index["objectPresence"][config.ADE20K_WALL_CLASS_IDX, idx] == 0:
+            # There is no wall object present at this index
+            return False
 
-        # if self.index["objectPresence"][self.ADE20K_WALL_CLASS_IDX, idx] == 0:
-        #     # There is no wall object present at this index
-        #     return False
-        #
-        # scene = self.index['scene'][idx]
-        # if scene.startswith('/'):
-        #     scene_short = scene.split('/')[1]
-        # else:
-        #     scene_short = scene.split('/')[0]
-        # filename = self.index['filename'][idx]
-        # if scene_short in WALL_DATA['scenes']:
-        #     return True
-        # if scene in WALL_DATA['full_scenes']:
-        #     return True
-        # if filename in WALL_DATA['filenames']:
-        #     return True
-        #
-        # return False
+        if not self.filter_scenes:
+            return True
+
+        # Additional filtering based on scene whitelist
+        scene = self.index['scene'][idx]
+        return scene in config.WALL_SCENES
 
     def _convert_seg_image_to_mask(self, seg_image) -> np.array:
         # Remove all labels except 'wall' and set it to '1'
         mask = super()._convert_seg_image_to_mask(seg_image)
-        mask[mask != self.ADE20K_WALL_CLASS_ID] *= 0
-        mask[mask == self.ADE20K_WALL_CLASS_ID] = 1
+        mask[mask != config.ADE20K_WALL_CLASS_ID] *= 0
+        mask[mask == config.ADE20K_WALL_CLASS_ID] = 1
         return mask
 
 
 class SimpleWallADE20KDataset(WallADE20KDataset):
-    IMAGE_SIZE = (512, 512)
 
-    def __init__(self, root, mode='all', length: Optional[int] = None):
-        super().__init__(root, mode)
+    def __init__(
+            self,
+            root, mode='all',
+            length: Optional[int] = None,
+            filter_scenes: bool = True,
+            image_size: Tuple[int, int] = config.INPUT_IMAGE_SIZE
+    ):
+        super().__init__(root, mode=mode, filter_scenes=filter_scenes)
+
+        self.image_size = image_size
 
         if length:
             length = min(self.__len__(), length)
+            # TODO: pick random indices if `shuffle` parameter is passed True
             indices_to_keep = list(range(0, length))
             self._filter_keep_indices(indices_to_keep)
 
@@ -147,8 +141,8 @@ class SimpleWallADE20KDataset(WallADE20KDataset):
         image, mask = super().__getitem__(idx)
 
         # Resize image
-        image = np.array(Image.fromarray(image).resize(self.IMAGE_SIZE, Image.BILINEAR))
-        mask = np.array(Image.fromarray(mask).resize(self.IMAGE_SIZE, Image.NEAREST))
+        image = np.array(Image.fromarray(image).resize(self.image_size, Image.BILINEAR))
+        mask = np.array(Image.fromarray(mask).resize(self.image_size, Image.NEAREST))
 
         # Convert image from HWC to CHW
         image = np.moveaxis(image, -1, 0)
