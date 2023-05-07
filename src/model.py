@@ -6,9 +6,12 @@ from torch.optim import Adam
 
 class WallModel(pl.LightningModule):
 
-    def __init__(self, architecture, encoder_name, in_channels, out_classes):
+    def __init__(self, architecture, encoder_name, in_channels, out_classes, learning_rate: float = 1e-4):
         super().__init__()
 
+        self.learning_rate = learning_rate
+
+        # FIXME: why encoder is not visualized in training parameters during training phase?
         self.model = smp.create_model(
             architecture,
             encoder_name=encoder_name,
@@ -32,7 +35,7 @@ class WallModel(pl.LightningModule):
         }
 
     def forward(self, image):
-        image = (image - self.mean) / self.std
+        # image = (image - self.mean) / self.std
         mask = self.model(image)
         return mask
 
@@ -73,6 +76,9 @@ class WallModel(pl.LightningModule):
         )
 
         self.log(f"{stage}_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
+
+        # TODO: log some images to TensorBoard
+        #   https://youtu.be/iCO3h4WhvdQ?t=296
 
         output = {
             "loss": loss,
@@ -134,7 +140,7 @@ class WallModel(pl.LightningModule):
         return self._shared_epoch_end("test")
 
     def configure_optimizers(self):
-        optimizer = Adam(self.parameters(), lr=1e-4)
+        optimizer = Adam(self.parameters(), lr=self.learning_rate)
         # scheduler = ExponentialLR(optimizer, gamma=0.95, verbose=True, )
         # eturn [optimizer], [scheduler]
         return optimizer

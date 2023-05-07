@@ -53,6 +53,7 @@ class ADE20KDataset(torch.utils.data.Dataset):
         split = folder.split('/')[3]
         return split == 'training'
 
+    # TODO: some sample code return this as infinite or other value, stating that DataLoader maintain their own list, thus transormations are not effective
     def __len__(self):
         return len(self.index['filename'])
 
@@ -119,17 +120,22 @@ class WallADE20KDataset(ADE20KDataset):
 
 
 class SimpleWallADE20KDataset(WallADE20KDataset):
-
+    # TODO: add transforms, RandomVerticalFlip, etc (see WallSegmentation paper)
+    #   And this: https://github.com/qubvel/segmentation_models.pytorch/blob/master/examples/cars%20segmentation%20(camvid).ipynb
     def __init__(
             self,
             root, mode='all',
             length: Optional[int] = None,
             filter_scenes: bool = True,
-            image_size: Tuple[int, int] = config.INPUT_IMAGE_SIZE
+            image_size: Tuple[int, int] = config.INPUT_IMAGE_SIZE,
+            augmentation_fn=None,
+            preprocessing_fn=None
     ):
         super().__init__(root, mode=mode, filter_scenes=filter_scenes)
 
         self.image_size = image_size
+        self.augmentation_fn = augmentation_fn
+        self.preprocessing_fn = preprocessing_fn
 
         if length:
             length = min(self.__len__(), length)
@@ -141,11 +147,23 @@ class SimpleWallADE20KDataset(WallADE20KDataset):
         image, mask = super().__getitem__(idx)
 
         # Resize image
-        image = np.array(Image.fromarray(image).resize(self.image_size, Image.BILINEAR))
-        mask = np.array(Image.fromarray(mask).resize(self.image_size, Image.NEAREST))
+        # TODO: consider resizing by preserving padding (make it optional)
+        # image = np.array(Image.fromarray(image).resize(self.image_size, Image.BILINEAR))
+        # mask = np.array(Image.fromarray(mask).resize(self.image_size, Image.NEAREST))
 
-        # Convert image from HWC to CHW
-        image = np.moveaxis(image, -1, 0)
-        mask = np.expand_dims(mask, 0)
+        if self.augmentation_fn is not None:
+            sample = self.augmentation_fn(image=image, mask=mask)
+            image = sample['image']
+            mask = sample['mask']
+
+        # TODO: wrap in albu lambda, as in car_segmentation.ipynb
+        if self.preprocessing_fn is not None:
+            sample = self.preprocessing_fn(image=image, mask=mask)
+            image = sample['image']
+            mask = sample['mask']
+
+        # # Convert image from HWC to CHW
+        # image = np.moveaxis(image, -1, 0)
+        # mask = np.expand_dims(mask, 0)
 
         return image, mask

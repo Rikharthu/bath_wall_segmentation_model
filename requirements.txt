@@ -10,3 +10,4 @@ tqdm
 jupyter
 pytorch-lightning==1.5.4
 segmentation-models-pytorch
+tensorboard==2.13.0

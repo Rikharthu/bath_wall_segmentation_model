@@ -1,8 +1,15 @@
-DATA_DIR = "./dataset/"
+# DATA_ROOT = "../dataset/ADE20K_2021_17_01"
+DATA_ROOT = '/home/ricardsku/Development/ADE20K_2021_17_01'
 
 ADE20K_WALL_CLASS_IDX = 2977
 # 0 is reserved for background
 ADE20K_WALL_CLASS_ID = ADE20K_WALL_CLASS_IDX + 1
+
+INPUT_IMAGE_SIZE = (512, 512)
+LEARNING_RATE = 1e-4
+BATCH_SIZE = 8
+MAX_EPOCHS = 200
+FREEZE_ENCODER = False
 
 WALL_SCENES = {'/airlock', '/alcove', '/amusement_arcade', '/anechoic_chamber', '/arcade', '/archive', '/armory',
                '/army_base/n_soldiers_eating_or_drinking_in_the_base', '/army_base/n_soldiers_practicing_shooting',
@@ -131,5 +138,3 @@ WALL_SCENES = {'/airlock', '/alcove', '/amusement_arcade', '/anechoic_chamber', 
                'utliers/tomb', 'utliers/upper_balcony', 'utliers/vat', 'utliers/vestibule', 'utliers/walkway',
                'utliers/war_room', 'utliers/washroom', 'utliers/widows_walk_indoor', 'veterinarians_office',
                'waiting_room', 'water_park', 'wet_bar', '~not labeled'}
-
-INPUT_IMAGE_SIZE = (512, 512)
