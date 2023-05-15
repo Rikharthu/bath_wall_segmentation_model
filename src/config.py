@@ -1,14 +1,52 @@
+RESUME_FROM_CHECKPOINT_PATH = './epoch=82-train_loss=0.1413-val_loss=0.1837-train_dataset_iou=0.7249-val_dataset_iou=0.7027.ckpt'
+# RESUME_FROM_CHECKPOINT_PATH = './epoch=34-train_loss=0.1753-val_loss=0.2565-train_dataset_iou=0.6605-val_dataset_iou=0.6750.ckpt'
+# RESUME_FROM_CHECKPOINT_PATH = None # Do not resume, start from scratch
+
 # DATA_ROOT = "../dataset/ADE20K_2021_17_01"
 DATA_ROOT = '/home/ricardsku/Development/ADE20K_2021_17_01'
+
+# TODO: try training DeepLabV3Plus with Jaccard + CrossEntropy / Jaccard + Focal losses
+ARCHITECTURE = 'DeepLabV3Plus'
+# ARCHITECTURE = 'DeepLabV3'
+# ARCHITECTURE = 'PSPNet'
+# ARCHITECTURE = 'UNet'
+# ARCHITECTURE = 'PAN' # TODO
+# ENCODER = 'mobileone_s1'
+# ENCODER = 'mobileone_s2'
+ENCODER = 'mobileone_s3'
+# ENCODER = 'mobileone_s4'
 
 ADE20K_WALL_CLASS_IDX = 2977
 # 0 is reserved for background
 ADE20K_WALL_CLASS_ID = ADE20K_WALL_CLASS_IDX + 1
 
-INPUT_IMAGE_SIZE = (512, 512)
-LEARNING_RATE = 1e-4
-BATCH_SIZE = 8
+# TODO: try different image sizes
+#   For instance, car segmentation used (320, 320)
+# TODO: see size used by WallSegmentation
+# INPUT_IMAGE_SIZE = (512, 512)
+# TODO: try this with UNet or PSPNet
+# INPUT_IMAGE_SIZE = (800, 800)
+# INPUT_IMAGE_SIZE = (768, 768)
+INPUT_IMAGE_SIZE = (704, 704)
+# INPUT_IMAGE_SIZE = (320, 320)
+
+# LEARNING_RATE = 1e-4
+LEARNING_RATE = 1e-3
+
+BATCH_SIZE = 4
+# BATCH_SIZE = 8
+# BATCH_SIZE = 16
+
 MAX_EPOCHS = 200
+# MAX_EPOCHS = 5
+
+# EARLYSTOP_PATIENCE = 5
+# EARLYSTOP_PATIENCE = MAX_EPOCHS
+# Normally we would set it to small number, such as 3 or 5,
+# but we make it larger to get nice-looking graphs depipcting overfitting or underfitting, if any.
+# EARLYSTOP_PATIENCE = 10
+EARLYSTOP_PATIENCE = 20
+
 FREEZE_ENCODER = False
 
 WALL_SCENES = {'/airlock', '/alcove', '/amusement_arcade', '/anechoic_chamber', '/arcade', '/archive', '/armory',

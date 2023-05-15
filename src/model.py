@@ -1,15 +1,44 @@
 import pytorch_lightning as pl
 import torch
 import segmentation_models_pytorch as smp
-from torch.optim import Adam
+from torch.optim import Adam, SGD
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
+import os
+from typing import Optional
+
+from torch.utils.data import DataLoader
+
+from src.dataset import SimpleWallADE20KDataset
+from src.transform import get_train_augmentations, get_preprocessing_transform, get_val_augmentations
+from src import config
 
 
 class WallModel(pl.LightningModule):
+    train_dataset: Optional[SimpleWallADE20KDataset]
+    val_dataset: Optional[SimpleWallADE20KDataset]
 
-    def __init__(self, architecture, encoder_name, in_channels, out_classes, learning_rate: float = 1e-4):
+    def __init__(
+            self,
+            architecture: str,
+            encoder_name: str,
+            in_channels: int,
+            out_classes: int,
+            learning_rate: float = config.LEARNING_RATE,
+            train_size: Optional[int] = None,
+            val_size: Optional[int] = None,
+            init_datasets: bool = False
+    ):
         super().__init__()
 
+        # TODO: write in dissertation, that it was a design choice to provide most hyperparameters in args, even though
+        #   we have those defined in config.py. It allows us to save those in PyTorch Lightning checkpoints and
+        #   easily resume training, not having to reset those manually in config.py form MLflow UI
+
+        self.save_hyperparameters()
+
         self.learning_rate = learning_rate
+        self.train_size = train_size
+        self.val_size = val_size
 
         # FIXME: why encoder is not visualized in training parameters during training phase?
         self.model = smp.create_model(
@@ -22,17 +51,57 @@ class WallModel(pl.LightningModule):
         # Preprocessing parameters for image
         self.params = smp.encoders.get_preprocessing_params(encoder_name)
 
-        # Per-channel NCHW
-        self.register_buffer("std", torch.tensor(self.params["std"]).view(1, 3, 1, 1))
-        self.register_buffer("mean", torch.tensor(self.params["mean"]).view(1, 3, 1, 1))
+        if init_datasets:
+            self.train_dataset = self._create_train_dataset()
+            self.val_dataset = self._create_val_dataset()
+        else:
+            self.train_dataset = None
+            self.val_dataset = None
 
         # Dice loss or binary cross-entropy
-        self.loss_fn = smp.losses.DiceLoss(smp.losses.BINARY_MODE, from_logits=True)
+        # self.losses = [
+        #     ("jaccard", 0.1, smp.losses.JaccardLoss(mode=smp.losses.BINARY_MODE, from_logits=True)),
+        #     ("focal", 0.9, smp.losses.FocalLoss(mode=smp.losses.BINARY_MODE)),
+        # ]
+        # self.losses = [
+        #     # ('cross-entropy', 0.9, torch.nn.CrossEntropyLoss()),
+        #     ('binary-cross-entropy', 0.9, torch.nn.BCEWithLogitsLoss()),
+        #     # ('soft-cross-entropy', 0.9, smp.losses.SoftCrossEntropyLoss(mode)),
+        #     ("jaccard", 0.1, smp.losses.JaccardLoss(mode=smp.losses.BINARY_MODE, from_logits=True)),
+        # ]typ
+        self.losses = [
+            ('binary-cross-entropy', 1.0, torch.nn.BCEWithLogitsLoss()),
+        ]
+        # self.losses = [
+        #     ('dice', 1.0, smp.losses.DiceLoss(mode=smp.losses.BINARY_MODE, from_logits=True))
+        # ]
 
         self.stage_outputs = {
             "train": [],
             "val": []
         }
+        self.best_metrics = {}
+
+        self.optimizer = SGD(self.parameters(), lr=self.learning_rate, weight_decay=1e-4, momentum=0.9)
+        self.scheduler = CosineAnnealingWarmRestarts(T_0=10, T_mult=2, optimizer=self.optimizer)
+
+    def _create_train_dataset(self):
+        return SimpleWallADE20KDataset(
+            root=config.DATA_ROOT,
+            mode='train',
+            length=self.train_size,
+            augmentation_fn=get_train_augmentations(),
+            preprocessing_fn=get_preprocessing_transform(config.ENCODER)
+        )
+
+    def _create_val_dataset(self):
+        return SimpleWallADE20KDataset(
+            root=config.DATA_ROOT,
+            mode='val',
+            length=self.val_size,
+            augmentation_fn=get_val_augmentations(),
+            preprocessing_fn=get_preprocessing_transform(config.ENCODER)
+        )
 
     def forward(self, image):
         # image = (image - self.mean) / self.std
@@ -56,7 +125,12 @@ class WallModel(pl.LightningModule):
         logits_mask = self.forward(image)
 
         # Predict mask contains logits, and loss_fn param 'from_logits' is set to True
-        loss = self.loss_fn(logits_mask, mask)
+        # loss = self.loss_fn(logits_mask, mask)
+        total_loss = 0
+        for loss_name, weight, loss in self.losses:
+            ls_mask = loss(logits_mask, mask)
+            total_loss += weight * ls_mask
+            self.log(f'{stage}_{loss_name}_loss', ls_mask, prog_bar=True, on_step=False, on_epoch=True)
 
         # Lets compute metrics for some threshold
         # First convert mask values to probabilities, then apply thresholding
@@ -75,13 +149,10 @@ class WallModel(pl.LightningModule):
             mode="binary"
         )
 
-        self.log(f"{stage}_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
-
-        # TODO: log some images to TensorBoard
-        #   https://youtu.be/iCO3h4WhvdQ?t=296
+        self.log(f'{stage}_loss', total_loss, prog_bar=True, on_step=False, on_epoch=True)
 
         output = {
-            "loss": loss,
+            "loss": total_loss,
             "tp": tp,
             "fp": fp,
             "fn": fn,
@@ -122,9 +193,11 @@ class WallModel(pl.LightningModule):
         outputs.clear()
 
     def training_step(self, batch, batch_idx):
+        # TODO: log learning rate as in https://github.com/ternaus/cloths_segmentation/blob/main/cloths_segmentation/train.py
         return self._shared_step(batch, "train")
 
     def on_train_epoch_end(self):
+        self.log('learning_rate', self.current_learning_rate(), prog_bar=False)
         return self._shared_epoch_end("train")
 
     def validation_step(self, batch, batch_idx):
@@ -140,10 +213,36 @@ class WallModel(pl.LightningModule):
         return self._shared_epoch_end("test")
 
     def configure_optimizers(self):
-        optimizer = Adam(self.parameters(), lr=self.learning_rate)
+        # optimizer = Adam(self.parameters(), lr=self.learning_rate)
+        # TODO: try this
+        # optimizer = AdamW(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
+        # self.optimizer = SGD(self.parameters(), lr=self.learning_rate, weight_decay=1e-4, momentum=0.9)
+
         # scheduler = ExponentialLR(optimizer, gamma=0.95, verbose=True, )
-        # eturn [optimizer], [scheduler]
-        return optimizer
+        # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(T_0=10, T_mult=2, optimizer=self.optimizer)
+        # scheduler = OneCycleLR(optimizer, max_lr, epochs=epoch, steps_per_ephc=len(train_loader)
+        return [self.optimizer], [self.scheduler]
+
+    def current_learning_rate(self):
+        optimizers = self.optimizers()
+        if isinstance(optimizers, list):
+            optimizer = optimizers[0]
+        else:
+            optimizer = optimizers
+        return optimizer.param_groups[0]['lr']
+
+    def train_dataloader(self):
+        if self.train_dataset is None:
+            self.train_dataset = self._create_train_dataset()
+        n_cpu = os.cpu_count()
+        return DataLoader(self.train_dataset, batch_size=config.BATCH_SIZE, shuffle=True, num_workers=n_cpu)
+
+    def val_dataloader(self):
+        if self.val_dataset is None:
+            self.val_dataset = self._create_val_dataset()
+        n_cpu = os.cpu_count()
+        # Single batch size because images are of different size
+        return DataLoader(self.val_dataset, batch_size=1, shuffle=False, num_workers=n_cpu)
 
 
 if __name__ == '__main__':

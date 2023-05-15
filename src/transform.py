@@ -54,15 +54,42 @@ def get_train_augmentations():
             min_width=config.INPUT_IMAGE_SIZE[0],
             border_mode=0
         ),
+        A.PadIfNeeded(
+            min_height=None,
+            min_width=None,
+            pad_width_divisor=32,
+            pad_height_divisor=32,
+            border_mode=0,
+        ),
     ])
 
 
+#
+
+# TODO: myb we do not need to enforece square size, rater only min size + ensure that it is divisible by 32
+#   Too much black padding affects loss and othe rmetrics as it doesn't have any label (hence maps to 0, background)
+#   PadIfNeeded has pad_width_divisor and pad_height_divisor properties
+#   WallSegmentation uses batches for training, scaling to largest image in the batch
+#   Validation set has batch size of 1, and it is only minimally padded to be accurate
 def get_val_augmentations():
     return A.Compose([
         A.LongestMaxSize(max_size=min(config.INPUT_IMAGE_SIZE), interpolation=1),
         A.PadIfNeeded(
             min_height=config.INPUT_IMAGE_SIZE[1],
             min_width=config.INPUT_IMAGE_SIZE[0],
+            border_mode=0
+        ),
+    ])
+
+
+def get_val_augmentations_single(max_size=max(config.INPUT_IMAGE_SIZE)):
+    return A.Compose([
+        A.LongestMaxSize(max_size=max_size, interpolation=1),
+        A.PadIfNeeded(
+            min_height=None,
+            min_width=None,
+            pad_width_divisor=32,
+            pad_height_divisor=32,
             border_mode=0
         ),
     ])

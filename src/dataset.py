@@ -146,12 +146,8 @@ class SimpleWallADE20KDataset(WallADE20KDataset):
     def __getitem__(self, idx: int):
         image, mask = super().__getitem__(idx)
 
-        # Resize image
-        # TODO: consider resizing by preserving padding (make it optional)
-        # image = np.array(Image.fromarray(image).resize(self.image_size, Image.BILINEAR))
-        # mask = np.array(Image.fromarray(mask).resize(self.image_size, Image.NEAREST))
-
         if self.augmentation_fn is not None:
+            # print(f"Augmenting sample {idx}")
             sample = self.augmentation_fn(image=image, mask=mask)
             image = sample['image']
             mask = sample['mask']
@@ -161,9 +157,5 @@ class SimpleWallADE20KDataset(WallADE20KDataset):
             sample = self.preprocessing_fn(image=image, mask=mask)
             image = sample['image']
             mask = sample['mask']
-
-        # # Convert image from HWC to CHW
-        # image = np.moveaxis(image, -1, 0)
-        # mask = np.expand_dims(mask, 0)
 
         return image, mask

@@ -1,3 +1,4 @@
 /mlruns
 /tb_logs
 /*.ckpt
+/*.jpg
