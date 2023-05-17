@@ -26,7 +26,8 @@ class WallModel(pl.LightningModule):
             learning_rate: float = config.LEARNING_RATE,
             train_size: Optional[int] = None,
             val_size: Optional[int] = None,
-            init_datasets: bool = False
+            init_datasets: bool = False,
+            encoder_depth: int = config.ENCODER_DEPTH,
     ):
         super().__init__()
 
@@ -39,13 +40,15 @@ class WallModel(pl.LightningModule):
         self.learning_rate = learning_rate
         self.train_size = train_size
         self.val_size = val_size
+        self.encoder_depth = encoder_depth
 
         # FIXME: why encoder is not visualized in training parameters during training phase?
         self.model = smp.create_model(
             architecture,
             encoder_name=encoder_name,
             in_channels=in_channels,
-            classes=out_classes
+            classes=out_classes,
+            encoder_depth=encoder_depth,
         )
 
         # Preprocessing parameters for image
@@ -69,8 +72,12 @@ class WallModel(pl.LightningModule):
         #     # ('soft-cross-entropy', 0.9, smp.losses.SoftCrossEntropyLoss(mode)),
         #     ("jaccard", 0.1, smp.losses.JaccardLoss(mode=smp.losses.BINARY_MODE, from_logits=True)),
         # ]typ
+        # self.losses = [
+        #     ('binary-cross-entropy', 1.0, torch.nn.BCEWithLogitsLoss()),
+        # ]
         self.losses = [
-            ('binary-cross-entropy', 1.0, torch.nn.BCEWithLogitsLoss()),
+            ("jaccard", 0.1, smp.losses.JaccardLoss(mode=smp.losses.BINARY_MODE, from_logits=True)),
+            ('binary-cross-entropy', 0.9, torch.nn.BCEWithLogitsLoss()),
         ]
         # self.losses = [
         #     ('dice', 1.0, smp.losses.DiceLoss(mode=smp.losses.BINARY_MODE, from_logits=True))
@@ -197,7 +204,7 @@ class WallModel(pl.LightningModule):
         return self._shared_step(batch, "train")
 
     def on_train_epoch_end(self):
-        self.log('learning_rate', self.current_learning_rate(), prog_bar=False)
+        # self.log('learning_rate', self.current_learning_rate(), prog_bar=False)
         return self._shared_epoch_end("train")
 
     def validation_step(self, batch, batch_idx):

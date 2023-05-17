@@ -4,6 +4,18 @@ import pytorch_lightning as pl
 import matplotlib.pyplot as plt
 import mlflow
 
+class LearningRateLogging(Callback):
+
+    def __init__(self, log_fn):
+        self.log_fn = log_fn
+
+    def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"):
+        lr = trainer.optimizers[0].param_groups[0]['lr']
+        params = {
+            'learning_rate': lr,
+            'global_step': trainer.global_step
+        }
+        self.log_fn(params)
 
 class MLFlowImageLogging(Callback):
 
