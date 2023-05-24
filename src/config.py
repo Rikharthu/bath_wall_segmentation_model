@@ -1,6 +1,6 @@
-# RESUME_FROM_CHECKPOINT_PATH = './epoch=82-train_loss=0.1413-val_loss=0.1837-train_dataset_iou=0.7249-val_dataset_iou=0.7027.ckpt'
-# RESUME_FROM_CHECKPOINT_PATH = './epoch=34-train_loss=0.1753-val_loss=0.2565-train_dataset_iou=0.6605-val_dataset_iou=0.6750.ckpt'
-RESUME_FROM_CHECKPOINT_PATH = './mlruns/846943773481379712/6eff429ae0894a699635e3318d797766/artifacts/model/checkpoints/epoch=54-train_loss=0.1805-val_loss=0.2097-train_dataset_iou=0.6982-val_dataset_iou=0.6967/epoch=54-train_loss=0.1805-val_loss=0.2097-train_dataset_iou=0.6982-val_dataset_iou=0.6967.ckpt'
+# RESUME_FROM_CHECKPOINT_PATH = './mlruns/846943773481379712/6eff429ae0894a699635e3318d797766/artifacts/model/checkpoints/epoch=54-train_loss=0.1805-val_loss=0.2097-train_dataset_iou=0.6982-val_dataset_iou=0.6967/epoch=54-train_loss=0.1805-val_loss=0.2097-train_dataset_iou=0.6982-val_dataset_iou=0.6967.ckpt'
+# RESUME_FROM_CHECKPOINT_PATH = './mlruns/846943773481379712/275db59217b74a89916ec1ba6bb23bdb/artifacts/model/checkpoints/epoch=12-train_loss=0.2323-val_loss=0.2355-train_dataset_iou=0.6124-val_dataset_iou=0.6518/epoch=12-train_loss=0.2323-val_loss=0.2355-train_dataset_iou=0.6124-val_dataset_iou=0.6518.ckpt'
+RESUME_FROM_CHECKPOINT_PATH = './mlruns/846943773481379712/99fcc68d050d47c990c4f341d115a86a/artifacts/model/checkpoints/epoch=91-train_loss=0.1455-val_loss=0.2121-train_dataset_iou=0.7572-val_dataset_iou=0.7075/epoch=91-train_loss=0.1455-val_loss=0.2121-train_dataset_iou=0.7572-val_dataset_iou=0.7075.ckpt'
 # RESUME_FROM_CHECKPOINT_PATH = None # Do not resume, start from scratch
 
 # DATA_ROOT = "../dataset/ADE20K_2021_17_01"
@@ -13,9 +13,10 @@ ARCHITECTURE = 'DeepLabV3Plus'
 # ARCHITECTURE = 'UNet'
 # ARCHITECTURE = 'PAN' # TODO
 # ENCODER = 'mobileone_s1'
-ENCODER = 'mobileone_s2'
+# ENCODER = 'mobileone_s2'
 # ENCODER = 'mobileone_s3'
-# ENCODER = 'mobileone_s4'
+ENCODER = 'mobileone_s4'
+# ENCODER = 'mobileone_s5'
 
 # TODO: try this parameter, it defaults to 5 for DeepLabV3+
 # ENCODER_DEPTH = 3
@@ -50,7 +51,7 @@ MAX_EPOCHS = 200
 # Normally we would set it to small number, such as 3 or 5,
 # but we make it larger to get nice-looking graphs depipcting overfitting or underfitting, if any.
 # EARLYSTOP_PATIENCE = 10
-EARLYSTOP_PATIENCE = 20
+EARLYSTOP_PATIENCE = 30
 
 FREEZE_ENCODER = False
 
