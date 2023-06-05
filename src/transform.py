@@ -23,36 +23,45 @@ def get_preprocessing_transform(preprocessing_fn):
     ])
 
 
-def get_train_augmentations():
-    return A.Compose([
-        A.HorizontalFlip(p=0.5),
-        A.ShiftScaleRotate(
-            scale_limit=0.2,
-            rotate_limit=15,
-            shift_limit=0.1,
-            p=1,
-            border_mode=0
-        ),
-        A.Perspective(p=0.5),
-        A.OneOf([
-            A.CLAHE(p=1),
-            A.RandomBrightness(p=1),
-            A.RandomGamma(p=1),
-        ], p=0.9),
-        A.OneOf([
-            A.Sharpen(p=1),
-            A.Blur(blur_limit=3, p=1),
-            A.MotionBlur(blur_limit=3, p=1),
-        ], p=0.9),
-        A.OneOf([
-            A.RandomContrast(p=1),
-            A.HueSaturationValue(p=1),
-        ]),
+def get_train_augmentations(augment=True, mask_pad_val=0.0):
+    augmentations = []
+    
+    if augment:
+        augmentations.extend([
+            A.HorizontalFlip(p=0.5),
+            A.ShiftScaleRotate(
+                scale_limit=0.2,
+                rotate_limit=15,
+                shift_limit=0.1,
+                p=1,
+                border_mode=0,
+                mask_value=mask_pad_val
+            ),
+            A.Perspective(p=0.5, mask_pad_val=mask_pad_val),
+            A.OneOf([
+                A.CLAHE(p=1),
+                A.RandomBrightness(p=1),
+                A.RandomGamma(p=1),
+            ], p=0.9),
+            A.OneOf([
+                A.Sharpen(p=1),
+                A.Blur(blur_limit=3, p=1),
+                A.MotionBlur(blur_limit=3, p=1),
+            ], p=0.9),
+            A.OneOf([
+                A.RandomContrast(p=1),
+                A.HueSaturationValue(p=1),
+            ]),
+        ])
+        
+    # Ensure that all images in the training batch have the same size
+    augmentations.extend([
         A.LongestMaxSize(max_size=min(config.INPUT_IMAGE_SIZE), interpolation=1),
         A.PadIfNeeded(
             min_height=config.INPUT_IMAGE_SIZE[1],
             min_width=config.INPUT_IMAGE_SIZE[0],
-            border_mode=0
+            border_mode=0,
+            mask_value=mask_pad_val,
         ),
         A.PadIfNeeded(
             min_height=None,
@@ -60,8 +69,11 @@ def get_train_augmentations():
             pad_width_divisor=32,
             pad_height_divisor=32,
             border_mode=0,
+            mask_value=mask_pad_val,
         ),
     ])
+    
+    return A.Compose(augmentations)
 
 
 #
@@ -71,18 +83,19 @@ def get_train_augmentations():
 #   PadIfNeeded has pad_width_divisor and pad_height_divisor properties
 #   WallSegmentation uses batches for training, scaling to largest image in the batch
 #   Validation set has batch size of 1, and it is only minimally padded to be accurate
-def get_val_augmentations():
+def get_val_augmentations(mask_pad_val=0.0):
     return A.Compose([
         A.LongestMaxSize(max_size=min(config.INPUT_IMAGE_SIZE), interpolation=1),
         A.PadIfNeeded(
             min_height=config.INPUT_IMAGE_SIZE[1],
             min_width=config.INPUT_IMAGE_SIZE[0],
-            border_mode=0
+            border_mode=0,
+            mask_value=mask_pad_val
         ),
     ])
 
 
-def get_val_augmentations_single(max_size=max(config.INPUT_IMAGE_SIZE)):
+def get_val_augmentations_single(max_size=max(config.INPUT_IMAGE_SIZE), mask_pad_val=0.0):
     return A.Compose([
         A.LongestMaxSize(max_size=max_size, interpolation=1),
         A.PadIfNeeded(
@@ -90,6 +103,7 @@ def get_val_augmentations_single(max_size=max(config.INPUT_IMAGE_SIZE)):
             min_width=None,
             pad_width_divisor=32,
             pad_height_divisor=32,
-            border_mode=0
+            border_mode=0,
+            mask_value=mask_pad_val
         ),
     ])

@@ -9,7 +9,7 @@ from typing import Optional
 from torch.utils.data import DataLoader
 
 from src.dataset import SimpleWallADE20KDataset
-from src.transform import get_train_augmentations, get_preprocessing_transform, get_val_augmentations
+from src.transform import get_train_augmentations, get_preprocessing_transform, get_val_augmentations_single
 from src import config
 
 
@@ -75,13 +75,22 @@ class WallModel(pl.LightningModule):
         # self.losses = [
         #     ('binary-cross-entropy', 1.0, torch.nn.BCEWithLogitsLoss()),
         # ]
-        self.losses = [
-            ("jaccard", 0.1, smp.losses.JaccardLoss(mode=smp.losses.BINARY_MODE, from_logits=True)),
-            ('binary-cross-entropy', 0.9, torch.nn.BCEWithLogitsLoss()),
-        ]
         # self.losses = [
         #     ('dice', 1.0, smp.losses.DiceLoss(mode=smp.losses.BINARY_MODE, from_logits=True))
         # ]
+        
+        
+        # self.losses = [
+        #     ("jaccard", 0.1, smp.losses.JaccardLoss(mode=smp.losses.BINARY_MODE, from_logits=True)),
+        #     ('binary-cross-entropy', 0.9, torch.nn.BCEWithLogitsLoss()),
+        # ]
+        self.losses = [
+            ('focal', 1.0, smp.losses.FocalLoss(mode=smp.losses.BINARY_MODE, ignore_index=-1))
+        ]
+        # self.losses = [
+        #     ('soft-bce-with-logits', 1.0, smp.losses.SoftBCEWithLogitsLoss(ignore_index=-1))
+        # ]
+        
 
         self.stage_outputs = {
             "train": [],
@@ -97,8 +106,8 @@ class WallModel(pl.LightningModule):
             root=config.DATA_ROOT,
             mode='train',
             length=self.train_size,
-            augmentation_fn=get_train_augmentations(),
-            preprocessing_fn=get_preprocessing_transform(config.ENCODER)
+            augmentation_fn=get_train_augmentations(mask_pad_val=-1.0),
+            preprocessing_fn=get_preprocessing_transform(config.ENCODER),
         )
 
     def _create_val_dataset(self):
@@ -106,7 +115,7 @@ class WallModel(pl.LightningModule):
             root=config.DATA_ROOT,
             mode='val',
             length=self.val_size,
-            augmentation_fn=get_val_augmentations(),
+            augmentation_fn=get_val_augmentations_single(mask_pad_val=-1.0),
             preprocessing_fn=get_preprocessing_transform(config.ENCODER)
         )
 
@@ -127,7 +136,7 @@ class WallModel(pl.LightningModule):
 
         # Assert NCHW
         assert mask.ndim == 4
-        assert mask.max() <= 1.0 and mask.min() >= 0.0
+        # assert mask.max() <= 1.0 and mask.min() >= 0.0
 
         logits_mask = self.forward(image)
 
@@ -150,10 +159,17 @@ class WallModel(pl.LightningModule):
         # but for now we just compute true positive, false positive, false negative
         # and true negative 'pixels' for each image and class
         # these values will be aggregated in the end of an epoch
+        # tp, fp, fn, tn = smp.metrics.get_stats(
+        #     pred_mask.long(),
+        #     mask.long(),
+        #     mode="binary"
+        # )
         tp, fp, fn, tn = smp.metrics.get_stats(
             pred_mask.long(),
             mask.long(),
-            mode="binary"
+            mode='multiclass',
+            num_classes=2,
+            ignore_index=-1,
         )
 
         self.log(f'{stage}_loss', total_loss, prog_bar=True, on_step=False, on_epoch=True)

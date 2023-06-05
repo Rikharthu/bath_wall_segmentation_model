@@ -1,21 +1,21 @@
-# RESUME_FROM_CHECKPOINT_PATH = './mlruns/846943773481379712/6eff429ae0894a699635e3318d797766/artifacts/model/checkpoints/epoch=54-train_loss=0.1805-val_loss=0.2097-train_dataset_iou=0.6982-val_dataset_iou=0.6967/epoch=54-train_loss=0.1805-val_loss=0.2097-train_dataset_iou=0.6982-val_dataset_iou=0.6967.ckpt'
-# RESUME_FROM_CHECKPOINT_PATH = './mlruns/846943773481379712/275db59217b74a89916ec1ba6bb23bdb/artifacts/model/checkpoints/epoch=12-train_loss=0.2323-val_loss=0.2355-train_dataset_iou=0.6124-val_dataset_iou=0.6518/epoch=12-train_loss=0.2323-val_loss=0.2355-train_dataset_iou=0.6124-val_dataset_iou=0.6518.ckpt'
-RESUME_FROM_CHECKPOINT_PATH = './mlruns/846943773481379712/99fcc68d050d47c990c4f341d115a86a/artifacts/model/checkpoints/epoch=91-train_loss=0.1455-val_loss=0.2121-train_dataset_iou=0.7572-val_dataset_iou=0.7075/epoch=91-train_loss=0.1455-val_loss=0.2121-train_dataset_iou=0.7572-val_dataset_iou=0.7075.ckpt'
 # RESUME_FROM_CHECKPOINT_PATH = None # Do not resume, start from scratch
+RESUME_FROM_CHECKPOINT_PATH = '/home/ricardsku/Development/Bath/bath_wall_segmentation_model/notebooks/epoch=159-train_loss=0.0559-val_loss=0.0692-train_dataset_iou=0.8302-val_dataset_iou=0.8128.ckpt'
 
 # DATA_ROOT = "../dataset/ADE20K_2021_17_01"
 DATA_ROOT = '/home/ricardsku/Development/ADE20K_2021_17_01'
 
 # TODO: try training DeepLabV3Plus with Jaccard + CrossEntropy / Jaccard + Focal losses
+# TODO: try mobileones5 + UNet
 ARCHITECTURE = 'DeepLabV3Plus'
 # ARCHITECTURE = 'DeepLabV3'
 # ARCHITECTURE = 'PSPNet'
 # ARCHITECTURE = 'UNet'
 # ARCHITECTURE = 'PAN' # TODO
+# ENCODER = 'mobileone_s0'
 # ENCODER = 'mobileone_s1'
 # ENCODER = 'mobileone_s2'
-# ENCODER = 'mobileone_s3'
-ENCODER = 'mobileone_s4'
+ENCODER = 'mobileone_s3'
+# ENCODER = 'mobileone_s4'
 # ENCODER = 'mobileone_s5'
 
 # TODO: try this parameter, it defaults to 5 for DeepLabV3+
@@ -31,9 +31,9 @@ ADE20K_WALL_CLASS_ID = ADE20K_WALL_CLASS_IDX + 1
 # TODO: see size used by WallSegmentation
 # INPUT_IMAGE_SIZE = (512, 512)
 # TODO: try this with UNet or PSPNet
-# INPUT_IMAGE_SIZE = (800, 800)
+INPUT_IMAGE_SIZE = (800, 800)
 # INPUT_IMAGE_SIZE = (768, 768)
-INPUT_IMAGE_SIZE = (704, 704)
+# INPUT_IMAGE_SIZE = (704, 704)
 # INPUT_IMAGE_SIZE = (320, 320)
 
 # LEARNING_RATE = 1e-4
@@ -42,6 +42,12 @@ LEARNING_RATE = 1e-3
 BATCH_SIZE = 4
 # BATCH_SIZE = 8
 # BATCH_SIZE = 16
+# BATCH_SIZE = 32
+
+# Used to limit dataset for debug.
+# Set to 'None' to train on whole dataset
+TRAIN_SIZE = None
+# TRAIN_SIZE = 128
 
 MAX_EPOCHS = 200
 # MAX_EPOCHS = 5
