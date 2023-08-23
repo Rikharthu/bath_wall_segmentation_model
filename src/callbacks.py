@@ -44,7 +44,8 @@ class MLFlowImageLogging(Callback):
         eval_model = pl_module.eval()
         for idx, (x, _) in enumerate(iter(self.dataloader)):
             x = x.cuda()
-            mask_pred = eval_model(x).cpu().detach().numpy().squeeze()
+            mask_pred = eval_model(x).cpu().detach()
+            mask_pred = mask_pred.sigmoid().numpy().squeeze()
             mask_pred[mask_pred >= self.threshold] = 1.0
             mask_pred[mask_pred < self.threshold] = 0.0
             image, mask_gt = self.dataset_vis[idx]
