@@ -1,5 +1,5 @@
-# RESUME_FROM_CHECKPOINT_PATH = None # Do not resume, start from scratch
-RESUME_FROM_CHECKPOINT_PATH = '/home/ricardsku/Development/Bath/bath_wall_segmentation_model/notebooks/epoch=159-train_loss=0.0559-val_loss=0.0692-train_dataset_iou=0.8302-val_dataset_iou=0.8128.ckpt'
+RESUME_FROM_CHECKPOINT_PATH = None # Do not resume, start from scratch
+# RESUME_FROM_CHECKPOINT_PATH = '/home/ricardsku/Development/Bath/bath_wall_segmentation_model/notebooks/mlruns/846943773481379712/2affbda1576544cf87767823e709fb68/artifacts/model/checkpoints/epoch=62-train_loss=0.0541-val_loss=0.0737-train_dataset_iou=0.8362-val_dataset_iou=0.8090/epoch=62-train_loss=0.0541-val_loss=0.0737-train_dataset_iou=0.8362-val_dataset_iou=0.8090.ckpt'
 
 # DATA_ROOT = "../dataset/ADE20K_2021_17_01"
 DATA_ROOT = '/home/ricardsku/Development/ADE20K_2021_17_01'
@@ -16,7 +16,6 @@ ARCHITECTURE = 'DeepLabV3Plus'
 # ENCODER = 'mobileone_s2'
 ENCODER = 'mobileone_s3'
 # ENCODER = 'mobileone_s4'
-# ENCODER = 'mobileone_s5'
 
 # TODO: try this parameter, it defaults to 5 for DeepLabV3+
 # ENCODER_DEPTH = 3
@@ -37,8 +36,8 @@ INPUT_IMAGE_SIZE = (800, 800)
 # INPUT_IMAGE_SIZE = (320, 320)
 
 # LEARNING_RATE = 1e-4
-LEARNING_RATE = 1e-3
-
+# LEARNING_RATE = 1e-3
+LEARNING_RATE = 1e-2
 BATCH_SIZE = 4
 # BATCH_SIZE = 8
 # BATCH_SIZE = 16

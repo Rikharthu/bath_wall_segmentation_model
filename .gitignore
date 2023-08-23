@@ -1,2 +1,6 @@
 /dataset/*
 /.idea
+*.ckpt
+*.mlpackage
+*/lightning_logs
+/src/__pycache__
