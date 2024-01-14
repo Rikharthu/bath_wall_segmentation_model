@@ -1,8 +1,6 @@
 RESUME_FROM_CHECKPOINT_PATH = None # Do not resume, start from scratch
-# RESUME_FROM_CHECKPOINT_PATH = '/home/ricardsku/Development/Bath/bath_wall_segmentation_model/notebooks/mlruns/846943773481379712/2affbda1576544cf87767823e709fb68/artifacts/model/checkpoints/epoch=62-train_loss=0.0541-val_loss=0.0737-train_dataset_iou=0.8362-val_dataset_iou=0.8090/epoch=62-train_loss=0.0541-val_loss=0.0737-train_dataset_iou=0.8362-val_dataset_iou=0.8090.ckpt'
 
-# DATA_ROOT = "../dataset/ADE20K_2021_17_01"
-DATA_ROOT = '/home/ricardsku/Development/ADE20K_2021_17_01'
+DATA_ROOT = "../dataset/ADE20K_2021_17_01"
 
 # TODO: try training DeepLabV3Plus with Jaccard + CrossEntropy / Jaccard + Focal losses
 # TODO: try mobileones5 + UNet

@@ -31,10 +31,6 @@ class WallModel(pl.LightningModule):
     ):
         super().__init__()
 
-        # TODO: write in dissertation, that it was a design choice to provide most hyperparameters in args, even though
-        #   we have those defined in config.py. It allows us to save those in PyTorch Lightning checkpoints and
-        #   easily resume training, not having to reset those manually in config.py form MLflow UI
-
         self.save_hyperparameters()
 
         self.learning_rate = learning_rate
@@ -42,7 +38,6 @@ class WallModel(pl.LightningModule):
         self.val_size = val_size
         self.encoder_depth = encoder_depth
 
-        # FIXME: why encoder is not visualized in training parameters during training phase?
         self.model = smp.create_model(
             architecture,
             encoder_name=encoder_name,
