@@ -2,20 +2,17 @@ RESUME_FROM_CHECKPOINT_PATH = None # Do not resume, start from scratch
 
 DATA_ROOT = "../dataset/ADE20K_2021_17_01"
 
-# TODO: try training DeepLabV3Plus with Jaccard + CrossEntropy / Jaccard + Focal losses
-# TODO: try mobileones5 + UNet
 ARCHITECTURE = 'DeepLabV3Plus'
 # ARCHITECTURE = 'DeepLabV3'
 # ARCHITECTURE = 'PSPNet'
 # ARCHITECTURE = 'UNet'
-# ARCHITECTURE = 'PAN' # TODO
+# ARCHITECTURE = 'PAN'
 # ENCODER = 'mobileone_s0'
 # ENCODER = 'mobileone_s1'
 # ENCODER = 'mobileone_s2'
 ENCODER = 'mobileone_s3'
 # ENCODER = 'mobileone_s4'
 
-# TODO: try this parameter, it defaults to 5 for DeepLabV3+
 # ENCODER_DEPTH = 3
 ENCODER_DEPTH = 5
 
@@ -23,11 +20,6 @@ ADE20K_WALL_CLASS_IDX = 2977
 # 0 is reserved for background
 ADE20K_WALL_CLASS_ID = ADE20K_WALL_CLASS_IDX + 1
 
-# TODO: try different image sizes
-#   For instance, car segmentation used (320, 320)
-# TODO: see size used by WallSegmentation
-# INPUT_IMAGE_SIZE = (512, 512)
-# TODO: try this with UNet or PSPNet
 INPUT_IMAGE_SIZE = (800, 800)
 # INPUT_IMAGE_SIZE = (768, 768)
 # INPUT_IMAGE_SIZE = (704, 704)

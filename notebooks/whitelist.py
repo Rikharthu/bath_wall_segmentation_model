@@ -1,9 +1,3 @@
-# TODO: filter scenes
-# TODO: compare with LIST_SCENES in WallSegmentation
-#   https://github.com/bjekic/WallSegmentation/blob/main/utils/constants.py
-#   What they have extra?
-#   What we have extra?
-#   Number of samples (their, mine, their original since dataset was updated)
 scene_whitelist = [
     'art_gallery',
     'bathroom',
